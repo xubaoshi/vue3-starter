@@ -1,11 +1,3 @@
----
-layout: post
-title: 'Vue.js 3.0 响应式原理'
-date: '2020-11-01'
-author: 'XuBaoshi'
-header-img: 'img/post-bg-06.jpg'
----
-
 # Vue.js 3.0 响应式原理
 
 <a name="df368884"></a>
