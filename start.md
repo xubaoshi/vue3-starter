@@ -117,6 +117,32 @@ export const createApp = ((...args) => {
 }) as CreateAppFunction<Element>
 ```
 
+- 上述代码中 `ensureRenderer` 方法顾明思议确保 renderer 对象是否存在，如果没有则生成一个（调用 createRenderer），生成 app 实例对象
+
+```javascript
+function ensureRenderer() {
+  return (
+    renderer || ((renderer = createRenderer < Node), Element > rendererOptions)
+  )
+}
+```
+
+- 在 `__DEV__` 开发模式下, 在 app.config 对象上添加 `isNativeTag` 属性
+
+```javascript
+function injectNativeTagCheck(app: App) {
+  // Inject `isNativeTag`
+  // this is used for component name validation (dev only)
+  Object.defineProperty(app.config, 'isNativeTag', {
+    value: (tag: string) => isHTMLTag(tag) || isSVGTag(tag),
+    writable: false,
+  })
+}
+```
+
+- 从 app 对象中解构 mount 方法暂存，然后重写 `app.mount`
+-
+
 ### createRenderer
 
 ### mount
