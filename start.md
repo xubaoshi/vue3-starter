@@ -45,15 +45,77 @@ vue 项目主要包含 3 个文件夹： packages、scripts、test-tds
 ## createApp 使用方法
 
 vue3.0 中是用 createApp 方法生成 vue 实例，回顾下 vue 2.0 版本中是如何生成实例的
+
 ### vue 2.0
 
 ```javascript
+// 方式一
+new Vue({
+  el: '#app',
+  data: {
+    message: 'Hello Vue!',
+  },
+})
+// 方式二
+const App = {
+  data() {
+    return {
+      message: 'Hello Vue!',
+    }
+  },
+}
+new Vue({
+  // h 为 createElement 方法
+  render: (h) => h(App),
+}).$mount('#app')
 ```
+
 ### vue3.0
+
+```javascript
+const App = {
+  data() {
+    return {
+      message: 'Hello Vue!',
+    }
+  },
+}
+Vue.createApp(App).mount('#app')
+```
 
 ## createApp 源码分析
 
+createApp 的相关源码放置在 `/packages/runtime-dom/src/index.ts` 中
+
 ### createApp
+
+```typescript
+export const createApp = ((...args) => {
+  const app = ensureRenderer().createApp(...args)
+
+  if (__DEV__) {
+    injectNativeTagCheck(app)
+  }
+
+  const { mount } = app
+  app.mount = (containerOrSelector: Element | string): any => {
+    const container = normalizeContainer(containerOrSelector)
+    if (!container) return
+    const component = app._component
+    if (!isFunction(component) && !component.render && !component.template) {
+      component.template = container.innerHTML
+    }
+    // clear content before mounting
+    container.innerHTML = ''
+    const proxy = mount(container)
+    container.removeAttribute('v-cloak')
+    container.setAttribute('data-v-app', '')
+    return proxy
+  }
+
+  return app
+}) as CreateAppFunction<Element>
+```
 
 ### createRenderer
 
