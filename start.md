@@ -41,4 +41,20 @@ vue 项目主要包含 3 个文件夹： packages、scripts、test-tds
 - size-check 测试 vue 包大小体积使用
 - template-explorer vue 内部的编译文件浏览工具
 - vue vue 的主入口文件
-  global.d.ts
+
+## createApp 使用方法
+
+vue3.0 中是用 createApp 方法生成 vue 实例，回顾下 vue 2.0 版本中是如何生成实例的
+### vue 2.0
+
+```javascript
+```
+### vue3.0
+
+## createApp 源码分析
+
+### createApp
+
+### createRenderer
+
+### mount
