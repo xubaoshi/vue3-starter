@@ -141,8 +141,133 @@ function injectNativeTagCheck(app: App) {
 ```
 
 - 从 app 对象中解构 mount 方法暂存，然后重写 `app.mount`
--
+- - 调用 normalizeContainer 方法获取根元素容器（'#app'）
+- - 判断 template 获取需要渲染的模板
+- - 把根元素的 innerHTML 置空 清除根元素
+- - 调用缓存中的 mount 方法，参数为 normalizeContainer 方法返回的跟容器
+    ```javascript
+    // normalizeContainer，获取元素
+    function normalizeContainer(container: Element | string): Element | null {
+      if (isString(container)) {
+        return document.querySelector(container)
+      }
+      return container
+    }
+    ```
+- - 删除 [v-cloak](https://cn.vuejs.org/v2/api/#v-cloak) 属性并添加 data-v-app 属性
+- - 返回 mount 方法的执行结果
+- 返回 app 实例
 
 ### createRenderer
+
+createApp 方法中调用 createRenderer 方法获取 renderer 对象
+
+```
+// packages/runtime-core/src/renderer.ts
+export function createRenderer<HostNode = RendererNode,
+    HostElement = RendererElement>(options: RendererOptions<HostNode, HostElement>) {
+    return baseCreateRenderer<HostNode, HostElement>(options)
+}
+```
+
+createRenderer 方法接受 RendererOptions 作为参数并调用 baseCreateRenderer 方法。
+
+```javascript
+// packages/runtime-core/src/renderer.ts
+function baseCreateRenderer(
+  options: RendererOptions,
+  createHydrationFns?: typeof createHydrationFunctions
+): any {
+  // ......
+
+  return {
+    render,
+    hydrate,
+    createApp: createAppAPI(render, hydrate),
+  }
+}
+```
+
+baseCreateRenderer 内部包含大量的变量声明 最后该方法返回的是 render 方法、hydate 方法、createApp 方法，同时 createApp 方法则通过 createAppAPI 获取。
+
+```javascript
+// packages/runtime-core/src/apiCreateApp.ts
+export function createAppContext(): AppContext {
+  return {
+    app: null as any,
+    config: {
+      isNativeTag: NO,
+      performance: false,
+      globalProperties: {},
+      optionMergeStrategies: {},
+      isCustomElement: NO,
+      errorHandler: undefined,
+      warnHandler: undefined
+    },
+    mixins: [],
+    components: {},
+    directives: {},
+    provides: Object.create(null)
+  }
+}
+
+export function createAppAPI<HostElement>(
+  render: RootRenderFunction,
+  hydrate?: RootHydrateFunction
+): CreateAppFunction<HostElement> {
+  return function createApp(rootComponent, rootProps = null) {
+    if (rootProps != null && !isObject(rootProps)) {
+      __DEV__ && warn(`root props passed to app.mount() must be an object.`)
+      rootProps = null
+    }
+
+    const context = createAppContext()
+    const installedPlugins = new Set()
+
+    let isMounted = false
+    const app: App = (context.app = {
+      _uid: uid++,
+      _component: rootComponent as ConcreteComponent,
+      _props: rootProps,
+      _container: null,
+      _context: context,
+
+      version,
+
+      get config() {
+        return context.config
+      },
+
+      set config(v) {
+        if (__DEV__) {
+          warn(
+            `app.config cannot be replaced. Modify individual options instead.`
+          )
+        }
+      },
+      use() {},
+      mixin() {},
+      component() {},
+      directive() {},
+      mount() {},
+      unmount() {},
+      provide() {}
+    })
+    return app
+  }
+}
+```
+
+createAppAPI 方法直接返回 createApp 函数， createApp 方法中 rootComponent 代表根组件， rootProps 方法为该组件所传递的参数。
+- 校验 root props
+- 调用 createAppContext 方法暂存到 context 中
+- 创建变量installedPlugins，Set类型，存储已经安装过的插件
+- isMounted设为false
+- 创建app，挂载属性和函数
+- 返回app
+
+![/imgs/start/3.png](/imgs/start/3.png)
+
+此时的 app 为后面的 mount 方法准备所需要用到的函数。
 
 ### mount
