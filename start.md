@@ -287,15 +287,14 @@ export function createAppAPI<HostElement>(
 ```
 
 createAppAPI 方法直接返回 createApp 函数， createApp 方法中 rootComponent 代表根组件， rootProps 方法为该组件所传递的参数。
+
 - 校验 root props
 - 调用 createAppContext 方法暂存到 context 中
-- 创建变量installedPlugins，Set类型，存储已经安装过的插件
-- isMounted设为false
-- 创建app，挂载属性和函数
-- 返回app
+- 创建变量 installedPlugins，Set 类型，存储已经安装过的插件
+- isMounted 设为 false
+- 创建 app，挂载属性和函数
+- 返回 app
 
 ![/imgs/start/3.png](/imgs/start/3.png)
 
 此时的 app 为后面的 mount 方法准备所需要用到的函数。
-
-### mount
