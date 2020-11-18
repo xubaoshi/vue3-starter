@@ -4,6 +4,34 @@
 
 vue 3.0 相较于 vue2.0 主要针对 config api 改为 composition api、typescript 的支持、vue 的内部结构被重写成了一个个可以解耦的模块（允许编译后 tree-shaking），从而减小体积加快运行速度。
 
+## v3.0 新特性介绍
+
+### Composition-API
+
+#### setup
+
+一旦 props 被解析，新的 setup 组件选项在创建组件之前执行，并被当作 Composition API 的入口点，但在执行 setup 时尚未创建组件实例，因此在 setup 选项中没有 this。setup 选项应该是一个接受 props 和 context 的函数。
+
+#### ref
+
+过使用一个新的 ref 函数使任何变量在任何地方变成响应
+
+```javascript
+import { ref } from 'vue'
+
+const counter = ref(0)
+
+console.log(counter) // { value: 0 }
+console.log(counter.value) // 0
+
+counter.value++
+console.log(counter.value) // 1
+```
+
+#### watch
+
+#### computed
+
 ## 下载项目
 
 [vue3.0 项目地址](https://github.com/vuejs/vue-next)
