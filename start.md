@@ -6,6 +6,58 @@ vue 3.0 相较于 vue2.0 主要针对 config api 改为 composition api、typesc
 
 ## v3.0 新特性介绍
 
+### 响应式基础
+
+#### reactive
+
+```javascript
+import { reactive } from 'vue'
+
+// 响应式状态
+const state = reactive({
+  count: 0,
+})
+```
+
+当从组件中的 data() 返回一个对象时，它在内部交由 reactive() 使其成为响应式对象。
+
+#### refs
+
+如果我们希望把一个数字变成响应的， Vue 提供了可以做此处理的 ref 方法。
+
+```javascript
+import { ref } from 'vue'
+
+const count = ref(0)
+console.log(count.value) // 0
+console.log(count) // 0
+
+count.value++
+console.log(count.value) // 1
+console.log(count) // 1
+```
+
+#### readonly
+
+有时我们想跟踪响应式对象 (ref 或 reactive) 的变化，但我们也希望防止在应用程序的某个位置更改它，们可以基于原始对象创建一个只读的 Proxy 对象。
+
+```javascript
+import { reactive, readonly } from 'vue'
+
+const original = reactive({ count: 0 })
+
+const copy = readonly(original)
+
+// 在copy上转换original 会触发侦听器依赖
+
+original.count++
+
+// 转换copy 将导失败并导致警告
+copy.count++ // 警告: "Set operation on key 'count' failed: target is readonly."
+```
+
+[更多响应式 api 文档](https://www.vue3js.cn/docs/zh/guide/reactivity.html#%E4%BB%80%E4%B9%88%E6%98%AF%E5%93%8D%E5%BA%94%E6%80%A7)
+
 ### Composition-API
 
 #### setup
