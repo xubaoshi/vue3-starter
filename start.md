@@ -75,7 +75,6 @@ ref() 函数用来根据给定的值创建一个响应式的数据对象，ref()
       const count = ref(10)
       // 在js 中获取ref 中定义的值, 需要通过value属性
       console.log(count.value) // 10
-      console.log(count) // 10
       return {
         count,
       }
@@ -84,31 +83,65 @@ ref() 函数用来根据给定的值创建一个响应式的数据对象，ref()
 </script>
 ```
 
+如果 ref 方法内部传入对象，其实底层还是调用的 reactive 方法。 ref、reactive 的具体还需要看场景。
+
+```javascript
+import {ref} from 'vue';
+export default {
+  name:'App'
+  setup(){
+    let obj = {name : 'alice', age : 12};
+    let newObj= ref(obj.name);
+    function change(){
+      newObj.value = 'Tom';
+      console.log(obj,newObj)
+  	}
+  return {newObj,change}
+}
+```
+
+当 change 执行的时候，响应式数据发生改变，而原始数据 obj 并不会改变。
+原因在于，ref 的本质是拷贝，与原始数据没有引用关系。
+
+### toRef
+
+使用 toRef 将某个对象中的属性变成响应式数据，修改响应式数据是会影响到原始数据的。但是需要注意，如果修改通过 toRef 创建的响应式数据，并不会触发 UI 界面的更新。
+
+```javascript
+import {toRef} from 'vue';
+export default {
+  name:'App'
+  setup(){
+    let obj = {name : 'alice', age : 12};
+    let newObj= toRef(obj, 'name');
+    function change(){
+      newObj.value = 'Tom';
+      console.log(obj,newObj)
+    }
+    return {newObj,change}
+  }
+}
+```
+
 ### toRefs
 
-toRefs() 函数可以将 reactive() 创建出来的响应式对象，转换为普通的对象，只不过，这个对象上的每个属性节点，都是 ref() 类型的响应式数据
+有的时候，我们希望将对象的多个属性都变成响应式数据，并且要求响应式数据和原始数据关联，并且更新响应式数据的时候不更新界面，就可以使用 toRefs，用于批量设置多个数据为响应式数据。
 
-```html
-<template>
-  <div class="mine">{{name}} {{age}}</div>
-</template>
-
-<script>
-  import { reactive, ref, toRefs } from 'vue'
-  export default {
-    setup(props, context) {
-      let state = reactive({
-        name: 'test',
-      })
-      const age = ref(18)
-
-      return {
-        ...toRefs(state), // test
-        age, // 18
-      }
-    },
+```javascript
+import {toRefs} from 'vue';
+export default {
+  name:'App'
+  setup(){
+    let obj = {name : 'alice', age : 12};
+    let newObj= toRefs(obj);
+    function change(){
+      newObj.name.value = 'Tom';
+      newObj.age.value = 18;
+      console.log(obj,newObj)
+    }
+    return {newObj,change}
   }
-</script>
+
 ```
 
 ### computed()
@@ -311,7 +344,7 @@ export default {
 }
 ```
 
-#### Suspense 组件
+### Suspense 组件
 
 Suspense 组件用于在等待某个异步组件解析时显示后备内容，每当我们希望组件等待数据获取时(通常在异步 API 调用中)，我们都可以使用 Vue3 Composition API 制作异步组件。
 
@@ -328,6 +361,21 @@ Suspense 组件用于在等待某个异步组件解析时显示后备内容，�
     <div>正在拼了命的加载…</div>
   </template>
 </Suspense>
+```
+
+需要注意的是<article-info/>组件需要返回一个 Promise
+
+```javascript
+export default {
+  name: 'AsyncComponent',
+  setup() {
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        resolve({ result: 'yuanxi' })
+      }, 2000)
+    })
+  },
+}
 ```
 
 ## 下载项目
@@ -541,16 +589,21 @@ export function createAppAPI<HostElement>(
   render: RootRenderFunction,
   hydrate?: RootHydrateFunction
 ): CreateAppFunction<HostElement> {
+  // createApp 方法中 rootComponent 代表根组件， rootProps 方法为该组件所传递的参数。
   return function createApp(rootComponent, rootProps = null) {
+    // 校验 root props
     if (rootProps != null && !isObject(rootProps)) {
       __DEV__ && warn(`root props passed to app.mount() must be an object.`)
       rootProps = null
     }
-
+    // 调用 createAppContext 方法暂存到 context 中
     const context = createAppContext()
+    // 存储已经安装过的插件
     const installedPlugins = new Set()
 
+    // isMounted 设为 false
     let isMounted = false
+    // 创建 app，挂载属性和函数
     const app: App = (context.app = {
       _uid: uid++,
       _component: rootComponent as ConcreteComponent,
@@ -571,13 +624,27 @@ export function createAppAPI<HostElement>(
           )
         }
       },
-      use() {},
-      mixin() {},
-      component() {},
-      directive() {},
-      mount() {},
-      unmount() {},
-      provide() {}
+      use() {
+        // ...
+      },
+      mixin() {
+        // ...
+      },
+      component() {
+        // ...
+      },
+      directive() {
+        // ...
+      },
+      mount() {
+        // ...
+      },
+      unmount() {
+        // ...
+      },
+      provide() {
+        // ...
+      }
     })
     return app
   }
@@ -596,3 +663,5 @@ createAppAPI 方法直接返回 createApp 函数， createApp 方法中 rootComp
 ![/imgs/start/3.png](/imgs/start/3.png)
 
 此时的 app 为后面的 mount 方法准备所需要用到的函数。
+
+最核心(繁琐)的操作都在 mount 里面,这里面包括 Vnode，render，patch 等等所有的核心功能。
