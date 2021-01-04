@@ -61,3 +61,32 @@ yarn run serve
   </body>
 </html>
 ```
+
+## mount 方法
+
+**packages/runtime-core/src/apiCreateApp.ts**
+
+```javascript
+mount(rootContainer: HostElement, isHydrate?: boolean): any {
+  if (!isMounted) {
+    const vnode = createVNode(
+      rootComponent as ConcreteComponent,
+      rootProps
+    )
+    vnode.appContext = context
+
+    if (isHydrate && hydrate) {
+      hydrate(vnode as VNode<Node, Element>, rootContainer as any)
+    } else {
+      render(vnode, rootContainer)
+    }
+    isMounted = true
+    app._container = rootContainer
+    ;(rootContainer as any).__vue_app__ = app
+
+    return vnode.component!.proxy
+  }
+}
+```
+
+1. 调用 `createVNode` 方法获取 vnode, 其中 `rootComponent` 即为调用 `createApp(config)` 数据, rootProps 为
