@@ -75,7 +75,7 @@ Vue.createApp(App).mount('#app')
 ```javascript
 mount(rootContainer: HostElement, isHydrate?: boolean): any {
   if (!isMounted) {
-    // 1. 调用 `createVNode` 方法获取 vnode, 其中 `rootComponent` 即为调用 `createApp(config)` 数据, rootProps 为其传入的对应组件的属性。
+    // 1. 调用 `createVNode` 方法获取 vnode, 其中 `rootComponent` 即为调用 `createApp(config)` 数据, rootProps 为其传入的对应组件的属性。使用 vnode 渲染真实的数据。
     const vnode = createVNode(
       rootComponent as ConcreteComponent,
       rootProps
@@ -159,12 +159,15 @@ const patch: PatchFn = (
     const {type, ref, shapeFlag} = n2
     switch (type) {
         case Text:
+            // 文本
             processText(n1, n2, container, anchor)
             break
         case Comment:
+            // 注释
             processCommentNode(n1, n2, container, anchor)
             break
         case Static:
+            // 静态组件 纯html
             if (n1 == null) {
                 mountStaticNode(n2, container, anchor, isSVG)
             } else if (__DEV__) {
@@ -172,7 +175,7 @@ const patch: PatchFn = (
             }
             break
         case Fragment:
-            // 处理片段(dom数组)的函数
+            // 处理片段(dom数组)的函数 多根组件
             processFragment(
                 n1,
                 n2,
@@ -210,6 +213,7 @@ const patch: PatchFn = (
                     optimized
                 )
             } else if (shapeFlag & ShapeFlags.TELEPORT) {
+                // 内置组件传送 弹框
                 ;(type as typeof TeleportImpl).process(
                     n1 as TeleportVNode,
                     n2 as TeleportVNode,
@@ -222,6 +226,7 @@ const patch: PatchFn = (
                     internals
                 )
             } else if (__FEATURE_SUSPENSE__ && shapeFlag & ShapeFlags.SUSPENSE) {
+                // SUSPENSE 组件传送 组件异步处理状态
                 ;(type as typeof SuspenseImpl).process(n1, n2, container, anchor, parentComponent, parentSuspense, isSVG, optimized, internals)
             } else if (__DEV__) {
                 warn('Invalid VNode type:', type, `(${typeof type})`)
@@ -373,7 +378,7 @@ const mountComponent: MountComponentFn = (
     if (__DEV__) {
       startMeasure(instance, `init`)
     }
-    // 2. 初始化 props 和 slots
+    // 2. 初始化 props 和 slots  调用组件的 setup 方法
     setupComponent(instance)
     if (__DEV__) {
       endMeasure(instance, `init`)
@@ -432,6 +437,37 @@ export function setupComponent(
     : undefined
   isInSSRComponentSetup = false
   return setupResult
+}
+```
+
+**packages/runtime-core/src/component.ts**
+
+setupStatefulComponent 实现逻辑如下：
+
+```javascript
+function setupStatefulComponent(
+  instance: ComponentInternalInstance,
+  isSSR: boolean
+) {
+  const Component = instance.type as ComponentOptions
+  // 创建渲染代理属性访问缓存
+  instance.accessCache = {}
+  instance.proxy = new Proxy(instance.ctx, PublicInstanceProxyHandlers)
+  // 如果组件选项里配置了setup，则会调用handleSetupResult对返回值setupResult进行处理；
+  // setupStatefulComponent内最终逻辑都会调用finishComponentSetup方法
+  const { setup } = Component
+  if (setup) {
+    const setupResult = setup()
+    if (isPromise(setupResult)) {
+      return setupResult.then((resolvedResult: unknown) => {
+        handleSetupResult(instance, resolvedResult, isSSR)
+      })
+    } else {
+      handleSetupResult(instance, setupContext)
+    }
+  } else {
+    finishComponentSetup(instance, isSSR)
+  }
 }
 ```
 
